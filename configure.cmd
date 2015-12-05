@@ -21,7 +21,7 @@
 	goto :EOF
     )
 
-    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" PATH %~dp0\src\lib;%PATH%
+    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" PATH %~dp0\cmd-lib.lib;%PATH%
     call cl_init "%~f0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
     if /i "%~1" == "/trace" shift & prompt $G$G & echo on
 
