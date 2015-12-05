@@ -175,9 +175,10 @@
     if "%install%"  == "false" goto :EOF
 
     for %%P in (sh.exe) do if "" == "%%~$PATH:P" (
-	set PATH=%MINGW_HOME%\bin;%PATH%
-	set PATH=%MSYS_HOME%\bin;%PATH%
+	set "PATH=%MINGW_HOME%\bin;%PATH%"
+	set "PATH=%MSYS_HOME%\bin;%PATH%"
     )
+
     for %%P in (sh.exe) do if "" == "%%~$PATH:P" (
 	    echo ERROR: Unable to locate sh.exe in your PATH. Did you install MinGW and MSYS?
 	    echo.       Did you exit the CMD window after you installed MinGW and MSYS?
