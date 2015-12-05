@@ -1,6 +1,6 @@
 @   echo off
 
-:main /? | [/v] [/n] [/extras]
+:main /? | [/v] [/n] [prefix directory] [/cmd-lib directory]
 
 :: = DESCRIPTION
 :: =   @PROG_NAME@ - installs cmd-installer.
@@ -8,6 +8,10 @@
 :: = OPTIONS
 :: =   /v       Be verbose. Repeat for extra verbosity.
 :: =   /n       Dry-run. Do not install, just show commands.
+:: =   /prefix   Name of directory to install !PACKAGE! in.
+:: =             Default is !prefix!.
+:: =   /cmd-lib  Directory with cmd-lib.
+:: =             Default is !cmdlib!.
 
 :: @author Jan Bruun Andersen
 :: @version @(#) Version: 2015-12-05
@@ -19,17 +23,17 @@
 	goto :EOF
     )
 
-    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" PATH @DST_DIR@\cmd-lib.lib;%PATH%
-    call cl_init "%~f0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
     if /i "%~1" == "/trace" shift & prompt $G$G & echo on
 
 :defaults
+    set "PACKAGE=cmd-installers"
+
     set "show_help=false"
     set "verbosity=0"
     set "dry_run=false"
-    set "extras=false"
+    set "prefix=@DST_DIR@"
+    set "cmdlib=@CMD_LIB@"
 
-    set "dst_dir=@DST_DIR@"
     set "cnt_mkdir=0"
     set "cnt_copy=0"
 
@@ -38,7 +42,11 @@
 
     if /i "%~1" == "/v"		set /a "verbosity+=1"	& shift		& goto :getopts
     if /i "%~1" == "/n"		set "dry_run=true"	& shift		& goto :getopts
-    if /i "%~1" == "/extras"	set "extras=true"	& shift		& goto :getopts
+    if /i "%~1" == "/prefix"	set "prefix=%~2"	& shift & shift	& goto :getopts
+    if /i "%~1" == "/cmd-lib"	set "cmdlib=%~2"	& shift & shift	& goto :getopts
+
+    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=%cmdlib%;%PATH%"
+    call cl_init "%~f0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
 
     set "char1=%~1"
     set "char1=%char1:~0,1%"
@@ -58,18 +66,17 @@
 	goto :error_exit
     )
 
-    if not defined dst_dir (
-	echo Missing argument - destination directory is empty.
+    if not defined prefix (
+	echo /prefix directory not defined.
 	echo.
     	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
 
     if 0%verbosity% geq 2 (
-	echo dst-dir = %dst_dir%
 	echo dry-run = %dry_run%
-	echo extras  = %extras%
-	echo action  = %action%
+	echo prefix  = %prefix%
+	echo cmdlib  = %cmdlib%
 	echo.
     )
 
@@ -77,12 +84,12 @@
     rem | This is where the real fun begins!
     rem '----------------------------------------------------------------------
 
-    if not exist "%dst_dir%"	       call :mkdir "%dst_dir%"	    || goto :exit
+    if not exist "%prefix%"	       call :mkdir "%prefix%"	    || goto :exit
 
-    rem %%F in (README.md)	    do call :copy "%%F" "%dst_dir%" || goto :exit
-    rem %%F in (LICENSE)	    do call :copy "%%F" "%dst_dir%" || goto :exit
-    for %%F in (src\*.cmd)	    do call :copy "%%F" "%dst_dir%" || goto :exit
-    rem %%F in (src\*.tmpl)	    do call :copy "%%F" "%dst_dir%" || goto :exit
+    rem %%F in (README.md)	    do call :copy "%%F" "%prefix%" || goto :exit
+    rem %%F in (LICENSE)	    do call :copy "%%F" "%prefix%" || goto :exit
+    for %%F in (src\*.cmd)	    do call :copy "%%F" "%prefix%" || goto :exit
+    rem %%F in (src\*.tmpl)	    do call :copy "%%F" "%prefix%" || goto :exit
 
     if 0%cnt_mkdir% gtr 0 echo Directories created: %cnt_mkdir%
     if 0%cnt_copy%  gtr 0 echo Files copied:        %cnt_copy%
@@ -124,7 +131,8 @@ rem '--------------------------------------------------------------------------
     echo show_help      = "%show_help%"
     echo verbosity      = "%verbosity%"
     echo dry_run        = "%dry_run%"
-    echo dst_dir        = "%dst_dir%"
+    echo prefix         = "%prefix%"
+    echo cmdlib         = "%cmdlib%"
 
     echo cnt_mkdir      = "%cnt_mkdir%"
     echo cnt_copy       = "%cnt_copy%"
