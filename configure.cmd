@@ -26,6 +26,7 @@
     if /i "%~1" == "/trace" shift & prompt $G$G & echo on
 
 :defaults
+    set "PROG_FULL=%~f0"
     set "PACKAGE=cmd-installers"
 
     set "show_help=false"
@@ -43,7 +44,7 @@
     if /i "%~1" == "/cmd-lib"	set "cmdlib=%~2"	& shift & shift	& goto :getopts
 
     for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=%cmdlib%;%PATH%"
-    call cl_init "%~f0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
+    call cl_init "%PROG_FULL%" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
 
     set "char1=%~1"
     set "char1=%char1:~0,1%"
