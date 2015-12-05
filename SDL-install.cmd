@@ -1,0 +1,310 @@
+@   echo off
+
+:main /? | [/v] [/unpack] [/unconfig] [/src-top source-dir] [archive-file [sub-dir]]
+
+:: = DESCRIPTION
+:: =   !PROG_NAME! - a script to install SDL 1.x.x.
+:: =
+:: =   OBS: Requires an existing MinGW installation with MSYS.
+:: =
+:: =   In short, the script does the following:
+:: =
+:: =     1) Unpacks the archive containing the SDL source code.
+:: =     2) Prepares for compilation of SDL.
+:: =     3) Builds SDL.
+:: =     4) Installs SDL into !MINGW_HOME!.
+:: =        Using /mingw as the prefix (and install location) ensures that the MinGW
+:: =        compiler suite can easily locate the SDL headers and libraries without
+:: =        requiring additional switches to oompilers and linkers.
+:: =     5) Builds the SDL test-suite.
+:: =
+:: =    To verify that everything went according to plan, navigate to the
+:: =    !unpack_top!\SDL-x.x.x\test folder and run the small
+:: =    'testwin.exe' application. It should display the SDL logo in a small,
+:: =    black window for about 3 seconds.
+:: =
+:: =    For more information, read the INSTALL file in !unpack_top!\SDL-x.x.x
+:: =    and the Wiki-article at http://www.dosbox.com/wiki/BuildingDOSBox.
+:: =
+:: = PARAMETERS
+:: =   archive-file
+:: =     Name of archive (7z, zip or tar) containing the SDL sources. !PROG_NAME!
+:: =     has been verified to work with the following archives:
+:: =
+:: =       SDL-1.2.15.zip (default)
+:: =       SDL-devel-1.2.15-mingw32.tar (specify sub-dir as SDL-1-2-15)
+::         GUIlib-1.2.1.tar (causes compilation errors when building SDL_net)
+:: =       SDL_net-1.2.8.zip
+::         SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
+:: =
+:: =   sub-dir
+:: =     The actual name of the sub directory where the archive will be unpacked
+:: =     depends on the structure of the archive. Usually, an archive like
+:: =     !archive! will be unpacked into a sub-directory named !arc_bname!.
+:: =     For those archives that does not conform to this scheme, use sub-dir
+:: =     to specify the root-folder used in the archive file.
+:: =
+:: = OPTIONS
+:: =   /v         Be verbose. Repeat for extra verbosity.
+:: =
+:: =   /unpack    Only unpack the files into !unpack_top!. Do not install.
+:: =
+:: =   /unconfig  Delete the global configuration cache file.
+:: =              In order to speed up the configuration process, the result of
+:: =              each run is cached in a global cache file,
+:: =              !MINGW_HOME!\GLOCAL.config.cache.
+:: =              If new packages, new libraries or other major changes is done to
+:: =              the MinGW/MSYS installation, it may be necessary to start with an
+:: =              empty cache file.
+:: =
+:: =   /src-top   Name of the top-level directory where sources files are kept.
+:: =
+:: = FILES
+:: =   Archive with sources:              !archive!
+:: =   Program for unpacking archive:     !UNPACKER!
+:: =   Top-level directory for sources:   !unpack_top!
+:: =   Directory for sources:             !unpack_top!\!arc_bname!
+:: =   Global cache file for 'configure': !conf_cache!
+:: =
+:: = ENVIRONMENT VARIABLES
+:: =   MINGW_HOME Home-directory for MinGW.       Default is %SystemDrive%\MinGW
+:: =   MSYS_HOME  Home-directory for MSYS.        Default is %MINGW_HOME%\msys\1.0
+:: =   UNPACKER   Program used to unpack archive. Default is %ProgramFiles%\7-Zip\7z
+
+:: @author MiniMax
+:: @version @(#) Version: 2015-12-05
+
+    verify 2>NUL: other
+    setlocal EnableExtensions
+    if ErrorLevel 1 (
+	echo Error - Unable to enable extensions.
+	goto :EOF
+    )
+
+    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" PATH %~dp0\cmd-lib.lib;%PATH%
+    call cl_init "%~f0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
+    if /i "%~1" == "/trace" shift & prompt $G$G & echo on
+
+:defaults
+    if not defined MINGW_HOME	set "MINGW_HOME=%SystemDrive%\MinGW"
+    if not defined MSYS_HOME	set "MSYS_HOME=%MINGW_HOME%\msys\1.0"
+    if not defined UNPACKER	set "UNPACKER=%ProgramFiles%\7-Zip\7z"
+
+    set "SDL1_SRC_URL=https://www.libsdl.org/release/SDL-1.2.15.zip"
+    set "SDL1_DEV_URL=https://www.libsdl.org/release/SDL-devel-1.2.15-mingw32.tar.gz"
+    set "SDL1_NET_URL=https://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.8.zip"
+    set "SDL1_GUI_URL=https://www.libsdl.org/projects/GUIlib/src/GUIlib-1.2.1.tar.gz"
+
+    set "SDL2_SRC_URL=https://www.libsdl.org/release/SDL2-2.0.3.zip"
+    set "SDL2_NET_URL=http.................."
+
+    set "SRC_URL=%SDL1_SRC_URL%"
+
+    set "show_help=false"
+    set "verbosity=0"
+    set "install=true"
+    set "unconfig=false"
+
+    call cl_basename "%SRC_URL%"
+    set "archive=%_basename%"
+    call cl_stripexts "%archive%" .7z .zip .tar .gz .tgz
+    call cl_basename "%_stripexts%
+    set "arc_bname=%_basename%"
+
+    set "unpack_top=%MSYS_HOME%\home\%UserName%\src"
+    set "conf_cache=%MINGW_HOME%\GLOBAL.config.cache"
+
+:getopts
+    if /i "%~1" == "/?"		set "show_help=true"	& shift		& goto :getopts
+
+    if /i "%~1" == "/v"		set /a "verbosity+=1"	& shift		& goto :getopts
+    if /i "%~1" == "/unpack"	set "install=false"	& shift		& goto :getopts
+    if /i "%~1" == "/unconfig"	set "unconfig=true"	& shift		& goto :getopts
+    if /i "%~1" == "/src-top"	set "unpack_top=%~2"	& shift & shift	& goto :getopts
+
+    set "char1=%~1"
+    set "char1=%char1:~0,1%"
+    if "%char1%" == "/" (
+	echo Unknown option - %1.
+	echo.
+	call cl_usage "%PROG_FULL%"
+	goto :error_exit
+    )
+
+    if "%show_help%" == "true" call cl_help "%PROG_FULL%" & goto :EOF
+
+    if not "%~1" == "" set "archive=%~1" & shift
+    call cl_stripexts "%archive%" .7z .zip .tar .gz .tgz
+    call cl_basename "%_stripexts%
+    set "arc_bname=%_basename%"
+
+    if not "%~1" == "" set "arc_bname=%~1" & shift
+
+    if 0%verbosity% geq 1 (
+	echo MINGW_HOME   = %MINGW_HOME%
+	echo MSYS_HOME    = %MSYS_HOME%
+	echo UNPACKER     = %UNPACKER%
+	echo install      = %install%
+	echo unconfig     = %unconfig%
+	echo archive-file = %archive%
+	echo src-top      = %unpack_top%
+	echo sub-dir      = %arc_bname%
+	echo.
+    )
+
+    if not exist "%archive%" (
+	echo.
+	echo ERROR: No such archive: "%archive%"
+	echo Please download "%SRC_URL%" and try again.
+	goto :error_exit
+    )
+
+    if not exist "%MINGW_HOME%\" (
+	echo ERROR: "%MINGW_HOME%" does not exist ^(or is not a directory^).
+	goto :error_exit
+    )
+
+    rem .----------------------------------------------------------------------
+    rem | This is where the real fun begins!
+    rem '----------------------------------------------------------------------
+
+    echo === 1^) Unpacking SDL-archive ===
+    call :unpack "%archive%" "%unpack_top%" || goto :exit
+
+    if "%unconfig%" == "true"  del /p "%conf_cache%"
+    if "%install%"  == "false" goto :EOF
+
+    for %%P in (sh.exe) do if "" == "%%~$PATH:P" (
+	set PATH=%MINGW_HOME%\bin;%PATH%
+	set PATH=%MSYS_HOME%\bin;%PATH%
+    )
+    for %%P in (sh.exe) do if "" == "%%~$PATH:P" (
+	    echo ERROR: Unable to locate sh.exe in your PATH. Did you install MinGW and MSYS?
+	    echo.       Did you exit the CMD window after you installed MinGW and MSYS?
+	    echo.
+	    echo Please check that "%MSYS_HOME%\bin" listed below:
+	    echo.
+	    for %%P in ("%PATH%") do echo %%~P
+	    goto :error_exit
+    )
+
+    pushd "%unpack_top%\%arc_bname%" || goto :exit
+	rem Using /mingw as the prefix (and install location) ensures that the MinGW
+	rem compiler suite can easily locate the SDL headers and libraries without
+	rem requiring additional switches to gcc and ld.
+
+	echo === 2^) Configuring %arc_bname% ===
+	call cl_cmd /ding /pause sh -c "./configure --prefix=/mingw --cache-file='%conf_cache%'"
+
+	echo === 3^) Building %arc_bname% ===
+	call cl_cmd /ding /pause sh -c "make"
+
+	echo === 4^) Installing %arc_bname% ===
+	call cl_cmd /ding /pause sh -c "make install"
+
+	if not exist "test\" (
+	    echo === 5^) No test directory in %arc_bname%. Skipping. ===
+	) else (
+	    echo === 5^) Building test-suite ===
+	    call cl_cmd /ding /pause sh -c "cd test && ./configure --cache-file='%conf_cache%'"
+	    call cl_cmd /ding /pause sh -c "cd test && make"
+	)
+    popd
+
+    echo === All done ===
+    goto :exit
+goto :EOF
+
+rem .--------------------------------------------------------------------------
+rem | Unpacks an archive into the specified directory.
+rem |
+rem | @param 1 = Archive to unpack.
+rem | @param 2 = Directory into which the archive will be unpacked.
+rem |
+rem | @global %UNPACKER%  = path to unpack program.
+rem | @global %verbosity% = verbosity level (0..1).
+rem '--------------------------------------------------------------------------
+:unpack archive dst-dir
+    call cl_abspath "%~2"
+    if 0%verbosity% geq 1 echo Unpacking "%~1" into "%_abspath%".
+
+    call cl_stripexts "%UNPACKER%" .exe .com .cmd .bat
+    call cl_basename "%_stripexts%"
+    if /i "%_basename%" == "7z"  goto :upk7z
+    if /i "%_basename%" == "jar" goto :upkjar
+    
+    echo %PROG_NAME%: Sorry, no support for "%UNPACKER%"
+    echo as UNPACKER in this version.
+    echo.
+    echo Please check that you have defined UNPACKER correctly in %PROG_FULL%.
+    echo Alternatively, you can manually unpack "%~1" into a folder called
+    echo "%~2" and then re-run this script.
+    exit /b 1
+goto :EOF
+
+:upk7z
+    if 0%verbosity% geq 2 (call cl_unpack_7z  /v "%UNPACKER%" "%~1" "%~2") else (
+			   call cl_unpack_7z     "%UNPACKER%" "%~1" "%~2")
+    goto :upk
+
+:upkjar
+    if 0%verbosity% geq 2 (call cl_unpack_jar /v "%UNPACKER%" "%~1" "%~2") else (
+			   call cl_unpack_jar    "%UNPACKER%" "%~1" "%~2")
+    goto :upk
+
+:upk
+    if ErrorLevel 1 (
+	echo.
+	echo ERROR: Unable to unpack file "%~1" into "%~2%"
+	echo using "%UNPACKER%".
+    )
+goto :EOF
+
+rem .--------------------------------------------------------------------------
+rem | Displays a selection of variables belonging to this script.
+rem | Very handy when debugging.
+rem '--------------------------------------------------------------------------
+:dump_variables
+    echo =======
+    echo cwd            = "%CD%"
+    echo tmp_dir        = "%tmp_dir%"
+
+    echo MINGW_HOME     = "%MINGW_HOME%"
+    echo MSYS_HOME      = "%MSYS_HOME%"
+    echo UNPACKER       = "%UNPACKER%"
+    echo SRC_URL        = "%SRC_URL%"
+
+    echo show_help      = "%show_help%"
+    echo verbosity      = "%verbosity%"
+    echo install        = "%install%"
+    echo unconfig       = "%unconfig%"
+    echo archive        = "%archive%"
+    echo unpack_top     = "%unpack_top%"
+    echo arc_bname      = "%arc_bname%"
+
+    if defined tmp_dir if exist "%tmp_dir%\" (
+	echo.
+	dir %tmp_dir%
+    )
+
+    echo =======
+goto :EOF
+
+rem ----------------------------------------------------------------------------
+rem Sets ErrorLevel and exit-status. Without a proper exit-status tests like
+rem 'command && echo Success || echo Failure' will not work,
+rem
+rem OBS: NO commands must follow the call to %ComSpec%, not even REM-arks,
+rem      or the exit-status will be destroyed. However, null commands like
+rem      labels (or ::) is okay.
+rem ----------------------------------------------------------------------------
+:no_error
+    time >NUL: /t	& rem Set ErrorLevel = 0.
+    goto :exit
+:error_exit
+    verify 2>NUL: other	& rem Set ErrorLevel = 1.
+:exit
+    %ComSpec% /c exit %ErrorLevel%
+
+:: vim: set filetype=dosbatch tabstop=8 softtabstop=4 shiftwidth=4 noexpandtab:
+:: vim: set foldmethod=indent
