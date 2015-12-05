@@ -113,6 +113,9 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     (set packages=%packages% "MSYS Installation for MinGW Developers"=mingw-developer-toolkit)
     (set packages=%packages% "Formats and displays manual pages"=msys-man)
 
+    rem Strip leading spaces from package list.
+    set "packages=%packages:* =%"
+
     call cl_basename "%GET_URL%"
     set "archive=%_basename%"
 
