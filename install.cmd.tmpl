@@ -3,18 +3,18 @@
 :main /? | [/v] [/n] [prefix directory] [/cmd-lib directory]
 
 :: = DESCRIPTION
-:: =   @PROG_NAME@ - installs !PACKAGE!.
+:: =   ^!PROG_NAME^! - installs ^!PACKAGE^!.
 :: =
 :: = OPTIONS
-:: =   /v       Be verbose. Repeat for extra verbosity.
-:: =   /n       Dry-run. Do not install, just show commands.
+:: =   /v        Be verbose. Repeat for extra verbosity.
+:: =   /n        Dry-run. Do not install, just show commands.
 :: =   /prefix   Name of directory to install !PACKAGE! in.
-:: =             Default is !prefix!.
+:: =             Default is ^!prefix^!.
 :: =   /cmd-lib  Directory with cmd-lib.
-:: =             Default is !cmdlib!.
+:: =             Default is ^!cmdlib^!.
 
 :: @author Jan Bruun Andersen
-:: @version @(#) Version: 2015-12-05
+:: @version @(#) Version: 2015-12-07
 
     verify 2>NUL: other
     setlocal EnableExtensions
@@ -26,8 +26,9 @@
     if /i "%~1" == "/trace" shift & prompt $G$G & echo on
 
 :defaults
-    set "PROG_FULL=%~f0"
-    set "PACKAGE=cmd-installers"
+    set "PROG_FULL=%~f0"    & rem PROG_FULL needs to be set here since we will
+			      rem clobber %0 as part of the options processing.
+    set "PACKAGE=@PACKAGE@"
 
     set "show_help=false"
     set "verbosity=0"
@@ -46,6 +47,7 @@
     if /i "%~1" == "/prefix"	set "prefix=%~2"	& shift & shift	& goto :getopts
     if /i "%~1" == "/cmd-lib"	set "cmdlib=%~2"	& shift & shift	& goto :getopts
 
+    rem cl_init needs to be here, after setting cmdlib.
     for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=%cmdlib%;%PATH%"
     call cl_init "%PROG_FULL%" || (echo Failed to initialise cmd-lib. & goto :exit)
 
@@ -76,7 +78,6 @@
 
     if 0%verbosity% geq 2 (
 	echo dry-run = %dry_run%
-	echo extras  = %extras%
 	echo action  = %action%
 	echo prefix  = %prefix%
 	echo cmdlib  = %cmdlib%
@@ -84,15 +85,15 @@
     )
 
     rem .----------------------------------------------------------------------
-    rem | This is where the real fun begins!
+    rem | This is where the real fun begins^!
     rem '----------------------------------------------------------------------
 
     if not exist "%prefix%"	       call :mkdir "%prefix%"	    || goto :exit
 
-    rem %%F in (README.md)	    do call :copy "%%F" "%prefix%" || goto :exit
-    rem %%F in (LICENSE)	    do call :copy "%%F" "%prefix%" || goto :exit
+    REM %%F in (README.md)	    do call :copy "%%F" "%prefix%" || goto :exit
+    REM %%F in (LICENSE)	    do call :copy "%%F" "%prefix%" || goto :exit
     for %%F in (src\*.cmd)	    do call :copy "%%F" "%prefix%" || goto :exit
-    rem %%F in (src\*.tmpl)	    do call :copy "%%F" "%prefix%" || goto :exit
+    REM %%F in (src\*.tmpl)	    do call :copy "%%F" "%prefix%" || goto :exit
 
     if 0%cnt_mkdir% gtr 0 echo Directories created: %cnt_mkdir%
     if 0%cnt_copy%  gtr 0 echo Files copied:        %cnt_copy%
