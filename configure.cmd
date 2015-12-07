@@ -23,31 +23,30 @@
 	goto :EOF
     )
 
-    if /i "%~1" == "/trace" shift & prompt $G$G & echo on
+    if /i "%~1" == "/trace" shift /1 & prompt $G$G & echo on
 
 :defaults
-    set "PROG_FULL=%~f0"    & rem PROG_FULL needs to be set here since we will
-			      rem clobber %0 as part of the options processing.
-
     set "show_help=false"
     set "verbosity=0"
     set "prefix=%UserProfile%\LocalTools"
     set "cmdlib=%prefix%\cmd-lib.lib"
-    set "action=configure"
+    set "action=subst"
 
-    if exist "configure.dat" call :read_cfg "configure.dat"
+    set "PROG_CFG=%~dpn0.dat"
+    call :read_cfg "%PROG_CFG%" PACKAGE || goto :error_exit
+    set "template_files=install.cmd.tmpl"
 
 :getopts
-    if /i "%~1" == "/?"		set "show_help=true"	& shift		& goto :getopts
+    if /i "%~1" == "/?"		set "show_help=true"	& shift /1		& goto :getopts
 
-    if /i "%~1" == "/v"		set /a "verbosity+=1"	& shift		& goto :getopts
-    if /i "%~1" == "/clean"	set "action=clean"	& shift		& goto :getopts
-    if /i "%~1" == "/prefix"	set "prefix=%~2"	& shift & shift	& goto :getopts
-    if /i "%~1" == "/cmd-lib"	set "cmdlib=%~2"	& shift & shift	& goto :getopts
+    if /i "%~1" == "/v"		set /a "verbosity+=1"	& shift /1		& goto :getopts
+    if /i "%~1" == "/clean"	set "action=clean"	& shift /1		& goto :getopts
+    if /i "%~1" == "/prefix"	set "prefix=%~2"	& shift /1 & shift /1	& goto :getopts
+    if /i "%~1" == "/cmd-lib"	set "cmdlib=%~2"	& shift /1 & shift /1	& goto :getopts
 
-    rem cl_init needs to be here, after setting cmdlib.
+    rem cl_init needs to be here, after setting 'cmdlib'.
     for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=%cmdlib%;%PATH%"
-    call cl_init "%PROG_FULL%" || (echo Failed to initialise cmd-lib. & goto :exit)
+    call cl_init "%~dpf0" || (echo Failed to initialise cmd-lib. & goto :exit)
 
     set "char1=%~1"
     set "char1=%char1:~0,1%"
@@ -75,25 +74,44 @@
     )
 
     if 0%verbosity% geq 2 (
-	echo action  = %action%
-	echo prefix  = %prefix%
-	echo cmdlib  = %cmdlib%
-	echo.
+	echo action      = "%action%"
+	echo prefix      = "%prefix%"
+	echo cmdlib      = "%cmdlib%"
+	call :dump_cfg 11
     )
 
     rem .----------------------------------------------------------------------
     rem | This is where the real fun begins!
     rem '----------------------------------------------------------------------
 
-    goto :%action%
-:configure
-    call cl_token_subst install.cmd.tmpl install.cmd PACKAGE=%cfg_PACKAGE% DST_DIR="%prefix%" CMD_LIB="%cmdlib%"
-    goto :exit
-:clean
-    for %%F in (install.cmd) do (
-	if 0%verbosity% geq 1 echo Deleting %%F.
-	if exist "%%F" del "%%F"
-    )
+    goto :do_%action%
+    :do_subst
+	setlocal EnableDelayedExpansion
+	for %%T in (%template_files%) do (
+	    call cl_basename %%T .tmpl
+	    set "real_file=!_basename!"
+	    if 0%verbosity% geq 1 echo Creating "!real_file!" from "%%T".
+	    call cl_token_subst "%%T" "!real_file!" ^
+		PACKAGE=%cfg_PACKAGE% ^
+		DST_DIR="%prefix%" ^
+		CMD_LIB="%cmdlib%"
+	)
+	endlocal
+	goto :done
+    :do_clean
+	setlocal EnableDelayedExpansion
+	for %%T in (%template_files%) do (
+	    call cl_basename %%T .tmpl
+	    set "real_file=!_basename!"
+	    if exist "!real_file!" (
+		if 0%verbosity% geq 1 echo Deleting "!real_file!".
+		del "!real_file!"
+	    )
+	)
+	endlocal
+	goto :done
+    :done
+
     goto :exit
 goto :EOF
 
@@ -106,19 +124,49 @@ rem | assignments, e.g.
 rem |
 rem |   PACKAGE=cmd-lib
 rem |
-rem | The following values may be defined:
-rem |
-rem |   PACKAGE         Name of package being configured/installed.
-rem |
 rem | Each value will be assigned to a variable named cfg_<NAME>.
-rem | Anything else will (hopefully) be silently ignored!
+rem |
+rem | @param config-file  Name of configuration file.
+rem | @param req-value    Name of required configuration values.
 rem '--------------------------------------------------------------------------
-:read_cfg
-    if exist "%~1" (
-        for /F "usebackq eol=# tokens=1,* delims==" %%V in ("%~1") do (
-            if /i "%%V" == "PACKAGE"    set cfg_%%V=%%W
-        )
+:read_cfg config-file [req-value ...]
+    if not exist "%~1" (
+	echo>&2 ERROR - Configuration file "%~1" not found.
+	exit /b 1
     )
+
+    for /F "usebackq eol=# tokens=1,* delims==" %%V in ("%~1") do set cfg_%%V=%%W
+
+    for %%V in (%2 %3 %4 %5 %6 %7 %7 %9) do (
+	if not defined cfg_%%V (
+	    echo>&2 ERROR - Configuration value "%%V" is missing. Check "%~1".
+	    exit /b 1
+	)
+    )
+goto :EOF
+
+rem .--------------------------------------------------------------------------
+rem | Displays configuration values (variables with prefix 'cfg_') in two
+rem | columns:
+rem |
+rem |   cfg_VARNAME    = "variable-value"
+rem |
+rem | @param column1-size  Max size of name column.
+rem '--------------------------------------------------------------------------
+:dump_cfg column1-size
+    setlocal EnableDelayedExpansion
+
+    set csize=%~1
+
+    set "rpad="
+    for /L %%L in (1,1,%csize%) do set "rpad=!rpad! "
+
+    for /F "usebackq delims== tokens=1,*" %%V in (`set cfg_`) do (
+	set "V=%%V%rpad%"
+	set "V=!V:~0,%csize%!
+	echo !V! = "%%W"
+    )
+    endlocal
 goto :EOF
 
 rem .--------------------------------------------------------------------------
@@ -136,13 +184,7 @@ rem '--------------------------------------------------------------------------
     echo prefix         = "%prefix%"
     echo cmdlib         = "%cmdlib%"
 
-    setlocal enabledelayedexpansion
-    for /F "usebackq delims== tokens=1,*" %%V in (`set cfg_`) do (
-	set "V=%%V          "
-	set "V=!V:~0,14!
-	echo !V! = "%%W"
-    )
-    endlocal
+    call :dump_cfg 14
 
     if defined tmp_dir if exist "%tmp_dir%\" (
 	echo.
