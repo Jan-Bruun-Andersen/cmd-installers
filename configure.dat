@@ -1,5 +1,13 @@
-# @version (#) Verson: 2015-12-07
+# Data for configuration utility.
 #
-# Name of the package to be configured/installed.
+# PACKAGE    Name of the package to be configured/installed.
+# prefix     Name of directory to install PACKAGE in.
+# cmdlib     Directory with cmd-lib utilities in.
+# templates  List of template files which will be subjected to token substitution.
+#
+# @version (#) Verson: 2015-12-08
 
 PACKAGE=cmd-installers
+prefix=%UserProfile%\LocalTools
+cmdlib=%UserProfile%\LocalTools\cmd-lib.lib
+templates=install.cmd.tmpl src\*.cmd.tmpl
