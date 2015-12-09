@@ -3,7 +3,7 @@
 :main /? | [/v] [/unpack] [/unconfig] [/src-top source-dir] [archive-file [sub-dir]]
 
 :: = DESCRIPTION
-:: =   ^!PROG_NAME^! - a script to install SDL 1.x.x.
+:: =   !PROG_NAME! - a script to install SDL 1.x.x.
 :: =
 :: =   OBS: Requires an existing MinGW installation with MSYS.
 :: =
@@ -12,23 +12,23 @@
 :: =     1) Unpacks the archive containing the SDL source code.
 :: =     2) Prepares for compilation of SDL.
 :: =     3) Builds SDL.
-:: =     4) Installs SDL into ^!MINGW_HOME^!.
+:: =     4) Installs SDL into !MINGW_HOME!.
 :: =        Using /mingw as the prefix (and install location) ensures that the MinGW
 :: =        compiler suite can easily locate the SDL headers and libraries without
 :: =        requiring additional switches to oompilers and linkers.
 :: =     5) Builds the SDL test-suite.
 :: =
 :: =    To verify that everything went according to plan, navigate to the
-:: =    ^!src_top^!\SDL-x.x.x\test folder and run the small
+:: =    !src_top!\SDL-x.x.x\test folder and run the small
 :: =    'testwin.exe' application. It should display the SDL logo in a small,
 :: =    black window for about 3 seconds.
 :: =
-:: =    For more information, read the INSTALL file in ^!src_top^!\SDL-x.x.x
+:: =    For more information, read the INSTALL file in !src_top!\SDL-x.x.x
 :: =    and the Wiki-article at http://www.dosbox.com/wiki/BuildingDOSBox.
 :: =
 :: = PARAMETERS
 :: =   archive-file
-:: =     Name of archive (7z, zip or tar) containing the SDL sources. ^!PROG_NAME^!
+:: =     Name of archive (7z, zip or tar) containing the SDL sources. !PROG_NAME!
 :: =     has been verified to work with the following archives:
 :: =
 :: =       SDL-1.2.15.zip (default)
@@ -40,32 +40,32 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
 :: =   sub-dir
 :: =     The actual name of the sub directory where the archive will be unpacked
 :: =     depends on the structure of the archive. Usually, an archive like
-:: =     ^!archive^! will be unpacked into a sub-directory named ^!arc_bname^!.
+:: =     !archive! will be unpacked into a sub-directory named !arc_bname!.
 :: =     For those archives that does not conform to this scheme, use sub-dir
 :: =     to specify the root-folder used in the archive file.
 :: =
 :: = OPTIONS
 :: =   /v         Be verbose. Repeat for extra verbosity.
 :: =
-:: =   /unpack    Only unpack the files into ^!src_top^!. Do not install.
+:: =   /unpack    Only unpack the files into !src_top!. Do not install.
 :: =
 :: =   /unconfig  Delete the global configuration cache file.
 :: =              In order to speed up the configuration process, the result of
 :: =              each run is cached in a global cache file,
-:: =              ^!MINGW_HOME^!\GLOCAL.config.cache.
+:: =              !MINGW_HOME!\GLOCAL.config.cache.
 :: =              If new packages, new libraries or other major changes is done to
 :: =              the MinGW/MSYS installation, it may be necessary to start with an
 :: =              empty cache file.
 :: =
 :: =   /src-top   Name of the top-level directory where sources files are kept.
-:: =              Default is ^!src_top^!.
+:: =              Default is !src_top!.
 :: =
 :: = FILES
-:: =   Archive with sources:              ^!archive^!
-:: =   Program for unpacking archive:     ^!UNPACKER^!
-:: =   Top-level directory for sources:   ^!src_top^!
-:: =   Directory for sources:             ^!src_top^!\^!arc_bname^!
-:: =   Global cache file for 'configure': ^!conf_cache^!
+:: =   Archive with sources:              !archive!
+:: =   Program for unpacking archive:     !UNPACKER!
+:: =   Top-level directory for sources:   !src_top!
+:: =   Directory for sources:             !src_top!\!arc_bname!
+:: =   Global cache file for 'configure': !conf_cache!
 :: =
 :: = ENVIRONMENT VARIABLES
 :: =   MINGW_HOME Home-directory for MinGW.        Default is %SystemDrive%\MinGW
@@ -166,7 +166,7 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
     )
 
     rem .----------------------------------------------------------------------
-    rem | This is where the real fun begins^!
+    rem | This is where the real fun begins!
     rem '----------------------------------------------------------------------
 
     echo === 1^) Unpacking SDL-archive ===

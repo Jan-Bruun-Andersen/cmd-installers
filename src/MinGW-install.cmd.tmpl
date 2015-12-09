@@ -3,20 +3,20 @@
 :main /? | [/v] [/unpack] [/noxpath] [mingw-get.zip [package-name...]]
 
 :: = DESCRIPTION
-:: =   ^!PROG_NAME^! - a script to install MinGW (32-bit).
+:: =   !PROG_NAME! - a script to install MinGW (32-bit).
 :: =
-:: =   In short, ^!PROG_NAME^! does the following:
+:: =   In short, !PROG_NAME! does the following:
 :: =
 :: =     1) Unpacks the archive containing the MinGW install utility into the
-:: =        MinGW home directory (^!MINGW_HOME^!).
+:: =        MinGW home directory (!MINGW_HOME!).
 :: =     2) Creates the initial package catalogue.
 :: =     3) Updates existing packages.
 :: =     4) Installs MinGW and MSYS packages.
-:: =     5) Records '^!MINGW_HOME^!' as the mount-point for /mingw.
-:: =     6) Creates dummy directories for /usr and /tmp in '^!MSYS_HOME^!'.
+:: =     5) Records '!MINGW_HOME!' as the mount-point for /mingw.
+:: =     6) Creates dummy directories for /usr and /tmp in '!MSYS_HOME!'.
 :: =        These directories will be overlaid using default mounts by MSYS,
 :: =        but the fact that they exists allows for automatic path expansion.
-:: =     7) Appends '^!MINGW_HOME^!\bin' and '^!MSYS_HOME^!\bin' to the user's system-wide
+:: =     7) Appends '!MINGW_HOME!\bin' and '!MSYS_HOME!\bin' to the user's system-wide
 :: =        PATH environment variable.
 :: =
 :: =   By default these packages are installed:
@@ -31,7 +31,7 @@
 :: =   While the Developer Toolkit includes utilities such as 'patch' as 'vim',
 :: =   it lacks the manual pages, so you might want to install the full packages
 :: =   for a more complete MSYS environment. These packages can be installed by
-:: =   supplying the package name(s) as paramaters to ^!PROG_NAME^!
+:: =   supplying the package name(s) as paramaters to !PROG_NAME!
 :: =
 :: =   Some useful package names and their descriptions:
 :: =
@@ -45,27 +45,27 @@
 :: =    mingw-get.zip
 :: =             Name of the archive (7z, zip, or tar) containing the MinGW (32-bit)
 :: =             ommand line installer.
-:: =             ^!PROG_NAME^! has been verified to work with the following
+:: =             !PROG_NAME! has been verified to work with the following
 :: =             archives:
 :: =
 :: =              mingw-get-0.6.2-mingw32-beta-20131004-1-bin.zip (default)
 :: =
 :: =    package-name
 :: =             Package(s) to be installed. For a complete package list, use the
-:: =             command "^!MINGW_HOME^!\bin\mingw-get" list | more
+:: =             command "!MINGW_HOME!\bin\mingw-get" list | more
 :: =
 :: = OPTIONS
 :: =   /v        Be verbose.
 :: =
-:: =   /unpack   Only unpack the files into ^!MINGW_HOME^!. Do not install.
+:: =   /unpack   Only unpack the files into !MINGW_HOME!. Do not install.
 :: =
-:: =   /noxpath  Do not append ^!MINGW_HOME^!\bin and ^!MSYS_HOME^!\bin to the user's
+:: =   /noxpath  Do not append !MINGW_HOME!\bin and !MSYS_HOME!\bin to the user's
 :: =             system-wide PATH environment variable.
 :: = FILES
-:: =   Archive with MinGW (32-bit) installer:    ^!archive^!
-:: =   Program for unpacking archive:            ^!UNPACKER^!
-:: =   Default catalogue of installed packages:  ^!def_cat^!
-:: =   Current catalogue of installed packages:  ^!sys_cat^!
+:: =   Archive with MinGW (32-bit) installer:    !archive!
+:: =   Program for unpacking archive:            !UNPACKER!
+:: =   Default catalogue of installed packages:  !def_cat!
+:: =   Current catalogue of installed packages:  !sys_cat!
 :: =
 :: = ENVIRONMENT VARIABLES
 :: =   MINGW_HOME Home-directory for MinGW.        Default is %SystemDrive%\MinGW
@@ -160,7 +160,7 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     )
 
     rem .----------------------------------------------------------------------
-    rem | This is where the real fun begins^!
+    rem | This is where the real fun begins!
     rem '----------------------------------------------------------------------
 
     echo === 1^) Unpacking MinGW install utility ===
@@ -196,8 +196,8 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     setlocal enabledelayedexpansion
     for %%P in (%packages%) do (
 	set char1=%%P
-	set char1=^!char1:~0,1^!
-	if ^!char1^! == ^^" (
+	set char1=!char1:~0,1!
+	if !char1! == ^^" (
 	    echo Installing package %%P.
 	) else (
 	    call :mingw_get install %%~P
@@ -290,7 +290,7 @@ goto :EOF
 	if "" == "%%~$oPATH:I" (
 	    call :getx_var PATH
 	    if 0%verbosity% geq 1 echo Appending "%~2" to PATH.
-	    if exist "%~2\%%I" setx PATH ^!_^!;%~2
+	    if exist "%~2\%%I" setx PATH !_!;%~2
 	)
     )
     endlocal
