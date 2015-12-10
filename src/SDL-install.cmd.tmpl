@@ -82,7 +82,7 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
 	goto :EOF
     )
 
-    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=@CMD_LIB@;%PATH%"
+    for %%F in (cl_init.cmd) do if "" == "%%~$PATH:F" set "PATH=@CMDLIB@;%PATH%"
     call cl_init "%~dpf0" "%~1" || (echo Failed to initialise cmd-lib. & goto :exit)
     if /i "%~1" == "/trace" shift /1 & prompt $G$G & echo on
 

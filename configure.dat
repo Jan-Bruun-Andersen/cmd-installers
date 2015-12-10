@@ -5,7 +5,7 @@
 # cmdlib     Directory with cmd-lib utilities in.
 # templates  List of template files which will be subjected to token substitution.
 #
-# @version (#) Verson: 2015-12-08
+# @version (#) Verson: 2015-12-10
 
 PACKAGE=cmd-installers
 prefix=%UserProfile%\LocalTools
