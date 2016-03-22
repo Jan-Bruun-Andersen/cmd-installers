@@ -55,7 +55,7 @@
 :: =             command "!MINGW_HOME!\bin\mingw-get" list | more
 :: =
 :: = OPTIONS
-:: =   /v        Be verbose.
+:: =   /v        Be verbose. Repeat for extra verbosity.
 :: =
 :: =   /unpack   Only unpack the files into !MINGW_HOME!. Do not install.
 :: =
@@ -73,12 +73,12 @@
 :: =   UNPACKER   Program used to unpack archive.  Default is %ProgramFiles%\7-Zip\7z
 
 :: @author Jan Bruun Andersen (a.k.a. MiniMax)
-:: @version @(#) Version: 2015-12-08
+:: @version @(#) Version: 2016-03-22
 
     verify 2>NUL: other
     setlocal EnableExtensions
     if ErrorLevel 1 (
-	echo Error - Unable to enable extensions.
+	echo ERROR: Unable to enable extensions. >&2
 	goto :EOF
     )
 
@@ -132,8 +132,8 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     set "char1=%~1"
     set "char1=%char1:~0,1%"
     if "%char1%" == "/" (
-	echo Unknown option - %1.
-	echo.
+	echo Unknown option - %1. >&2
+	echo. >&2
 	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
@@ -153,9 +153,8 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     )
 
     if not exist "%archive%" (
-	echo.
-	echo ERROR: No such archive: "%archive%"
-	echo Please download "%GET_URL%" and try again.
+	echo ERROR: No such archive: "%archive%" >&2
+	echo Please download "%GET_URL%" and try again. >&2
 	goto :error_exit
     )
 
@@ -193,7 +192,7 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
     rem a package description or an actual package name.
 
     echo === 4^) Installing packages ===
-    setlocal enabledelayedexpansion
+    setlocal EnableDelayedExpansion
     for %%P in (%packages%) do (
 	set char1=%%P
 	set char1=!char1:~0,1!
@@ -204,7 +203,7 @@ rem set "MINGW64_INSTALLER_URL=http://downloads.sourceforge.net/project/mingw-w6
 	)
     )
     endlocal
-    if errorlevel 1 goto :error_exit
+    if ErrorLevel 1 goto :error_exit
     
     echo === 5^) Updating MSYS mount table ===
     pushd "%MSYS_HOME%" || goto :error_exit
@@ -275,9 +274,9 @@ goto :EOF
 
 :upk
     if ErrorLevel 1 (
-	echo.
-	echo ERROR: Unable to unpack file "%~1" into "%~2%"
-	echo using "%UNPACKER%".
+	echo. >&2
+	echo ERROR: Unable to unpack file "%~1" into "%~2%" >&2
+	echo using "%UNPACKER%". >&2
     )
 goto :EOF
 
@@ -285,7 +284,7 @@ goto :EOF
     call :getx_var PATH
     set oPATH=%_%
 
-    setlocal enabledelayedexpansion
+    setlocal EnableDelayedExpansion
     for %%I in ("%~1") do (
 	if "" == "%%~$oPATH:I" (
 	    call :getx_var PATH
@@ -334,7 +333,7 @@ goto :EOF
 
 rem ----------------------------------------------------------------------------
 rem Sets ErrorLevel and exit-status. Without a proper exit-status tests like
-rem 'command && echo Success || echo Failure' will not work,
+rem 'command && echo Success || echo Failure' will not work.
 rem
 rem OBS: NO commands must follow the call to %ComSpec%, not even REM-arks,
 rem      or the exit-status will be destroyed. However, null commands like

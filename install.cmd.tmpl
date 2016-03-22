@@ -15,12 +15,12 @@
 :: =             Default is !cfg_cmdlib!.
 
 :: @author Jan Bruun Andersen
-:: @version @(#) Version: 2015-12-10
+:: @version @(#) Version: 2016-03-22
 
     verify 2>NUL: other
     setlocal EnableExtensions
     if ErrorLevel 1 (
-	echo Error - Unable to enable extensions.
+	echo ERROR: Unable to enable extensions. >&2
 	goto :EOF
     )
 
@@ -56,8 +56,8 @@
     set "char1=%~1"
     set "char1=%char1:~0,1%"
     if "%char1%" == "/" (
-	echo Unknown option - %1.
-	echo.
+	echo ERROR: Unknown option - %1. >&2
+	echo. >&2
 	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
@@ -65,15 +65,8 @@
     if "%show_help%" == "true" call cl_help "%PROG_FULL%" & goto :EOF
 
     if not "%~1" == "" (
-	echo Extra argument - %1.
-	echo.
-    	call cl_usage "%PROG_FULL%"
-	goto :error_exit
-    )
-
-    if not defined prefix (
-	echo /prefix directory not defined.
-	echo.
+	echo ERROR: Extra argument - %1. >&2
+	echo. >&2
     	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
@@ -86,6 +79,13 @@
 	echo cmdlib      = "%cmdlib%"
 	echo.
 	if 0%verbosity% geq 3 call cl_dump_cfg /fullname & echo.
+    )
+
+    if not defined prefix (
+	echo ERROR: /prefix directory not defined. >&2
+	echo. >&2
+    	call cl_usage "%PROG_FULL%"
+	goto :error_exit
     )
 
     rem .----------------------------------------------------------------------
@@ -108,12 +108,12 @@ goto :EOF
 goto :EOF
 
 :do_clean
-    rem configure /clean will rmove 'install.bat' (that is us!) causing an
-    rem error when control is returned to ... the non-existing 'install.bat'.
+    rem configure /clean will remove 'install.cmd' (that is us!) causing an
+    rem error when control is returned to ... the non-existing 'install.cmd'.
     rem But this trick with 'goto' (see http://forum.script-coding.com/viewtopic.php?id=9050
     rem and http://www.dostips.com/forum/viewtopic.php?f=3&t=6491) works by
     rem
-    rem   1) Causing 'install.bat' to terminate in error, but
+    rem   1) Causing 'install.cmd' to terminate in error, but
     rem   2) Remembers that it needs to execute the 'configure /clean' command.
     rem
     rem As long as it is the last thing we do, it will work.
@@ -137,7 +137,7 @@ goto :EOF
     copy "%~1" "%~2" >NUL: && (
 	set /a "cnt_copy+=1"
     ) || (
-	echo ERROR - Failed to copy "%~1" to "%~2".
+	echo ERROR: Failed to copy "%~1" to "%~2". >&2
 	copy "%~1" "%~2"
 	goto :exit
     ) >&2

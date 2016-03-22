@@ -16,12 +16,12 @@
 :: =   configure.dat  Configuration file for !PROG_NAME!.
 
 :: @author Jan Bruun Andersen
-:: @version @(#) Version: 2015-12-10
+:: @version @(#) Version: 2016-03-22
 
     verify 2>NUL: other
     setlocal EnableExtensions
     if ErrorLevel 1 (
-	echo Error - Unable to enable extensions.
+	echo ERROR: Unable to enable extensions. >&2
 	goto :EOF
     )
 
@@ -52,8 +52,8 @@
     set "char1=%~1"
     set "char1=%char1:~0,1%"
     if "%char1%" == "/" (
-	echo Unknown option - %1.
-	echo.
+	echo ERROR: Unknown option - %1. >&2
+	echo. >&2
 	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
@@ -61,15 +61,8 @@
     if "%show_help%" == "true" call cl_help "%PROG_FULL%" & goto :EOF
 
     if not "%~1" == "" (
-	echo Extra argument - %1.
-	echo.
-    	call cl_usage "%PROG_FULL%"
-	goto :error_exit
-    )
-
-    if not defined prefix (
-	echo /prefix directory not defined.
-	echo.
+	echo ERROR: Extra argument - %1. >&2
+	echo. >&2
     	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
@@ -82,6 +75,13 @@
 	echo templates   = "%templates%"
 	echo.
 	if 0%verbosity% geq 3 call cl_dump_cfg /fullname & echo.
+    )
+
+    if not defined prefix (
+	echo ERROR: /prefix directory not defined. >&2
+	echo. >&2
+    	call cl_usage "%PROG_FULL%"
+	goto :error_exit
     )
 
     rem .----------------------------------------------------------------------

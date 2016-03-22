@@ -73,12 +73,12 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
 :: =   UNPACKER   Program used to unpack archive.  Default is %ProgramFiles%\7-Zip\7z
 
 :: @author Jan Bruun Andersen (a.k.a. MiniMax)
-:: @version @(#) Version: 2015-12-08
+:: @version @(#) Version: 2016-03-22
 
     verify 2>NUL: other
     setlocal EnableExtensions
     if ErrorLevel 1 (
-	echo Error - Unable to enable extensions.
+	echo ERROR: Unable to enable extensions. >&2
 	goto :EOF
     )
 
@@ -126,20 +126,19 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
     set "char1=%~1"
     set "char1=%char1:~0,1%"
     if "%char1%" == "/" (
-	echo Unknown option - %1.
-	echo.
+	echo Unknown option - %1. >&2
+	echo. >&2
 	call cl_usage "%PROG_FULL%"
 	goto :error_exit
     )
 
     if "%show_help%" == "true" call cl_help "%PROG_FULL%" & goto :EOF
 
-    if not "%~1" == "" set "archive=%~1" & shift /1
+    if not "%~1" == "" set "archive=%~1"    & shift /1
     call cl_stripexts "%archive%" .7z .zip .tar .gz .tgz
     call cl_basename "%_stripexts%
     set "arc_bname=%_basename%"
-
-    if not "%~1" == "" set "arc_bname=%~1" & shift /1
+    if not "%~1" == "" set "arc_bname=%~1"  & shift /1
 
     if 0%verbosity% geq 1 (
 	echo MINGW_HOME   = %MINGW_HOME%
@@ -154,14 +153,13 @@ rem        SDL2-2.0.3.zip (needs a fixed SDL_platform.h AND MinGW-64)
     )
 
     if not exist "%archive%" (
-	echo.
-	echo ERROR: No such archive: "%archive%"
-	echo Please download "%SRC_URL%" and try again.
+	echo ERROR: No such archive: "%archive%" >&2
+	echo Please download "%SRC_URL%" and try again. >&2
 	goto :error_exit
     )
 
     if not exist "%MINGW_HOME%\" (
-	echo ERROR: "%MINGW_HOME%" does not exist ^(or is not a directory^).
+	echo ERROR: "%MINGW_HOME%" does not exist ^(or is not a directory^). >&2
 	goto :error_exit
     )
 
@@ -256,9 +254,9 @@ goto :EOF
 
 :upk
     if ErrorLevel 1 (
-	echo.
-	echo ERROR: Unable to unpack file "%~1" into "%~2%"
-	echo using "%UNPACKER%".
+	echo. >&2
+	echo ERROR: Unable to unpack file "%~1" into "%~2%" >&2
+	echo using "%UNPACKER%". >&2
     )
 goto :EOF
 
@@ -294,7 +292,7 @@ goto :EOF
 
 rem ----------------------------------------------------------------------------
 rem Sets ErrorLevel and exit-status. Without a proper exit-status tests like
-rem 'command && echo Success || echo Failure' will not work,
+rem 'command && echo Success || echo Failure' will not work.
 rem
 rem OBS: NO commands must follow the call to %ComSpec%, not even REM-arks,
 rem      or the exit-status will be destroyed. However, null commands like
